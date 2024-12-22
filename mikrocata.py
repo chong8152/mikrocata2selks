@@ -130,6 +130,9 @@ def read_json(fpath):
             sleep(10)
             continue
 
+def get_geoip(ip):
+    response = requests.get(f"https://ip.mokky.kr/?ip={ip}")
+    return response.json()
 
 def add_to_tik(alerts):
     global last_pos
@@ -187,7 +190,15 @@ def add_to_tik(alerts):
 
                 print(f"[Mikrocata] new ip added: {cmnt}")
                 if enable_telegram == True:
-                    print(requests.get(sendTelegram("From: " + wanted_ip + "\nTo: " + src_ip + ":" + str(wanted_port) + "\nRule: " + cmnt)).json())
+                    geoip = get_geoip(wanted_ip)
+                    country = geoip["location"]["country"]
+                    asnum = geoip["as"]["number"]
+                    asorg = geoip["as"]["organization"]
+                    msg = f"""From: {wanted_ip} ({country})
+AS: {asorg} (#{asnum})
+To: {src_ip}:{wanted_port}
+Rule: {cmnt}"""
+                    print(requests.get(sendTelegram(msg)).json())
 
 
             except librouteros.exceptions.TrapError as e:
